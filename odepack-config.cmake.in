@@ -1,0 +1,19 @@
+# set target
+include("${CMAKE_CURRENT_LIST_DIR}/odepackTargets.cmake")
+
+# Set ODEPACK version
+set(ODEPACK_VERSION @ODEPACK_VERSION@)
+
+# Set ODEPACK include dir
+set(ODEPACK_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+set(ODEPACK_INCLUDE_DIRS "${ODEPACK_INCLUDE_DIR}")
+
+# Set ODEPACK FOUND
+set(ODEPACK_FOUND TRUE)
+
+# Add ODEPACK version
+if(NOT DEFINED ODEPACK_VERSION)
+    set(ODEPACK_VERSION "Unknown")
+endif()
+
+message(STATUS "Found ODEPACK version: ${ODEPACK_VERSION}")
