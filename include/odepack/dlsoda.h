@@ -7,7 +7,8 @@
 #define EXTERN
 #endif
 
-EXTERN typedef int (*dlsoda_f)(int *neq, double *t, double *y, double *ydot);
+EXTERN typedef int (*dlsoda_f)(int *neq, double *t, double *y, double *ydot,
+                               void *dat);
 
 /**
  * @brief
@@ -799,6 +800,6 @@ EXTERN void dlsoda(dlsoda_f f, int *neq, double *y, double *t, double *tout,
                    int *liw,
                    void (*jac)(int *neq, double *t, double *y, int *ml, int *mu,
                                double *pd, int *nrowpd),
-                   int *jt);
+                   int *jt, void *dat);
 
 #endif /* odepack_dlsoda_h */

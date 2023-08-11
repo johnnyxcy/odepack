@@ -14,25 +14,25 @@ struct PkData {
   double ka;
 };
 
-// int pk(int *neq, double *t, double *y, double *ydot, void *dat) {
+int pk(int *neq, double *t, double *y, double *ydot, void *dat) {
 
-//   auto pk_data = *static_cast<PkData *>(dat);
-//   // auto pk_data = PkData{.cl = 0.134, .v = 7.81, .ka = 0.571};
-
-//   ydot[0] = -pk_data.ka * y[0];
-//   ydot[1] = pk_data.ka * y[0] - pk_data.cl / pk_data.v * y[1];
-//   return (0);
-// }
-
-int pk(int *neq, double *t, double *y, double *ydot) {
-
-  // auto pk_data = *static_cast<PkData *>(dat);
-  auto pk_data = PkData{.cl = 0.134, .v = 7.81, .ka = 0.571};
+  auto pk_data = *static_cast<PkData *>(dat);
+  // auto pk_data = PkData{.cl = 0.134, .v = 7.81, .ka = 0.571};
 
   ydot[0] = -pk_data.ka * y[0];
   ydot[1] = pk_data.ka * y[0] - pk_data.cl / pk_data.v * y[1];
   return (0);
 }
+
+// int pk(int *neq, double *t, double *y, double *ydot,) {
+
+//   // auto pk_data = *static_cast<PkData *>(dat);
+//   auto pk_data = PkData{.cl = 0.134, .v = 7.81, .ka = 0.571};
+
+//   ydot[0] = -pk_data.ka * y[0];
+//   ydot[1] = pk_data.ka * y[0] - pk_data.cl / pk_data.v * y[1];
+//   return (0);
+// }
 
 int test_lsoda() {
 
@@ -61,11 +61,11 @@ int test_lsoda() {
   y[0] = 100.0;
   y[1] = 0.0;
 
-  // auto pk_data = PkData{.cl = 0.134, .v = 7.81, .ka = 0.571};
+  auto pk_data = PkData{.cl = 0.134, .v = 7.81, .ka = 0.571};
 
   for (i = 0; i < 12; i++) {
     dlsoda(pk, &neq, y, &t, &tout, &itol, &rtol, atol, &itask, &istate, &iopt,
-           rwork, &lrw, iwork, &liw, 0, &jt);
+           rwork, &lrw, iwork, &liw, 0, &jt, &pk_data);
     printf(" at t= %12.4e y= %14.6e %14.6e\n", t, y[0], y[1]);
     tout = tout + i;
   }

@@ -1,7 +1,7 @@
 *DECK DLSODA
       SUBROUTINE DLSODA (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
-     1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, JT)
-      EXTERNAL F, JAC
+     1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, JT, DAT)
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, JT
       DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW)
@@ -1213,7 +1213,7 @@ C-----------------------------------------------------------------------
       MXNCF = 10
 C Initial call to F.  (LF0 points to YH(*,2).) -------------------------
       LF0 = LYH + NYH
-      CALL F (NEQ, T, Y, RWORK(LF0))
+      CALL F (NEQ, T, Y, RWORK(LF0), DAT)
       NFE = 1
 C Load the initial value vector in YH. ---------------------------------
       DO 115 I = 1,N
@@ -1354,7 +1354,7 @@ C   CALL DSTODA(NEQ,Y,YH,NYH,YH,EWT,SAVF,ACOR,WM,IWM,F,JAC,DPRJA,DSOLSY)
 C-----------------------------------------------------------------------
       CALL DSTODA (NEQ, Y, RWORK(LYH), NYH, RWORK(LYH), RWORK(LEWT),
      1   RWORK(LSAVF), RWORK(LACOR), RWORK(LWM), IWORK(LIWM),
-     2   F, JAC, DPRJA, DSOLSY)
+     2   F, JAC, DPRJA, DSOLSY, DAT)
       KGO = 1 - KFLAG
       GO TO (300, 530, 540), KGO
 C-----------------------------------------------------------------------

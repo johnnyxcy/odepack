@@ -281,7 +281,7 @@ C----------------------- END OF SUBROUTINE DINTDY ----------------------
       END
 *DECK DPREPJ
       SUBROUTINE DPREPJ (NEQ, Y, YH, NYH, EWT, FTEM, SAVF, WM, IWM,
-     1   F, JAC)
+     1   F, JAC, DAT)
 C***BEGIN PROLOGUE  DPREPJ
 C***SUBSIDIARY
 C***PURPOSE  Compute and process Newton iteration matrix.
@@ -335,7 +335,7 @@ C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C***END PROLOGUE  DPREPJ
 C**End
-      EXTERNAL F, JAC
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),
@@ -383,7 +383,7 @@ C If MITER = 2, make N calls to F to approximate J. --------------------
         R = MAX(SRUR*ABS(YJ),R0/EWT(J))
         Y(J) = Y(J) + R
         FAC = -HL0/R
-        CALL F (NEQ, TN, Y, FTEM)
+        CALL F (NEQ, TN, Y, FTEM, DAT)
         DO 220 I = 1,N
  220      WM(I+J1) = (FTEM(I) - SAVF(I))*FAC
         Y(J) = YJ
@@ -405,7 +405,7 @@ C If MITER = 3, construct a diagonal approximation to J and P. ---------
       R = EL0*0.1D0
       DO 310 I = 1,N
  310    Y(I) = Y(I) + R*(H*SAVF(I) - YH(I,2))
-      CALL F (NEQ, TN, Y, WM(3))
+      CALL F (NEQ, TN, Y, WM(3), DAT)
       NFE = NFE + 1
       DO 320 I = 1,N
         R0 = H*SAVF(I) - YH(I,2)
@@ -448,7 +448,7 @@ C If MITER = 5, make MBAND calls to F to approximate J. ----------------
           YI = Y(I)
           R = MAX(SRUR*ABS(YI),R0/EWT(I))
  530      Y(I) = Y(I) + R
-        CALL F (NEQ, TN, Y, FTEM)
+        CALL F (NEQ, TN, Y, FTEM, DAT)
         DO 550 JJ = J,N,MBAND
           Y(JJ) = YH(JJ,1)
           YJJ = Y(JJ)
@@ -628,7 +628,7 @@ C----------------------- END OF SUBROUTINE DSRCOM ----------------------
       END
 *DECK DSTODE
       SUBROUTINE DSTODE (NEQ, Y, YH, NYH, YH1, EWT, SAVF, ACOR,
-     1   WM, IWM, F, JAC, PJAC, SLVS)
+     1   WM, IWM, F, JAC, PJAC, SLVS, DAT)
 C***BEGIN PROLOGUE  DSTODE
 C***SUBSIDIARY
 C***PURPOSE  Performs one step of an ODEPACK integration.
@@ -721,7 +721,7 @@ C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C***END PROLOGUE  DSTODE
 C**End
-      EXTERNAL F, JAC, PJAC, SLVS
+      EXTERNAL F, JAC, PJAC, SLVS, DAT
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
@@ -881,7 +881,7 @@ C-----------------------------------------------------------------------
  220  M = 0
       DO 230 I = 1,N
  230    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       IF (IPUP .LE. 0) GO TO 250
 C-----------------------------------------------------------------------
@@ -889,7 +889,7 @@ C If indicated, the matrix P = I - h*el(1)*J is reevaluated and
 C preprocessed before starting the corrector iteration.  IPUP is set
 C to 0 as an indicator that this has been done.
 C-----------------------------------------------------------------------
-      CALL PJAC (NEQ, Y, YH, NYH, EWT, ACOR, SAVF, WM, IWM, F, JAC)
+      CALL PJAC (NEQ, Y, YH, NYH, EWT, ACOR, SAVF, WM, IWM, F, JAC, DAT)
       IPUP = 0
       RC = 1.0D0
       NSLP = NST
@@ -935,7 +935,7 @@ C-----------------------------------------------------------------------
       IF (M .EQ. MAXCOR) GO TO 410
       IF (M .GE. 2 .AND. DEL .GT. 2.0D0*DELP) GO TO 410
       DELP = DEL
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       GO TO 270
 C-----------------------------------------------------------------------
@@ -1094,7 +1094,7 @@ C-----------------------------------------------------------------------
       H = H*RH
       DO 645 I = 1,N
  645    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       DO 650 I = 1,N
  650    YH(I,2) = H*SAVF(I)
@@ -1208,8 +1208,8 @@ C***FIRST EXECUTABLE STATEMENT  DVNORM
 C----------------------- END OF FUNCTION DVNORM ------------------------
       END
 *DECK DIPREP
-      SUBROUTINE DIPREP (NEQ, Y, RWORK, IA, JA, IPFLAG, F, JAC)
-      EXTERNAL F, JAC
+      SUBROUTINE DIPREP (NEQ, Y, RWORK, IA, JA, IPFLAG, F, JAC, DAT)
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, IA, JA, IPFLAG
       DOUBLE PRECISION Y, RWORK
       DIMENSION NEQ(*), Y(*), RWORK(*), IA(*), JA(*)
@@ -1252,7 +1252,8 @@ C-----------------------------------------------------------------------
       IPFLAG = 0
 C Call DPREP to do matrix preprocessing operations. --------------------
       CALL DPREP (NEQ, Y, RWORK(LYH), RWORK(LSAVF), RWORK(LEWT),
-     1   RWORK(LACOR), IA, JA, RWORK(LWM), RWORK(LWM), IPFLAG, F, JAC)
+     1   RWORK(LACOR), IA, JA, RWORK(LWM), RWORK(LWM), IPFLAG,
+     2   F, JAC, DAT)
       LENWK = MAX(LREQ,LWMIN)
       IF (IPFLAG .LT. 0) RETURN
 C If DPREP was successful, move YH to end of required space for WM. ----
@@ -1279,8 +1280,8 @@ C----------------------- End of Subroutine DIPREP ----------------------
       END
 *DECK DPREP
       SUBROUTINE DPREP (NEQ, Y, YH, SAVF, EWT, FTEM, IA, JA,
-     1                     WK, IWK, IPPER, F, JAC)
-      EXTERNAL F,JAC
+     1                     WK, IWK, IPPER, F, JAC, DAT)
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, IA, JA, IWK, IPPER
       DOUBLE PRECISION Y, YH, SAVF, EWT, FTEM, WK
       DIMENSION NEQ(*), Y(*), YH(*), SAVF(*), EWT(*), FTEM(*),
@@ -1396,7 +1397,7 @@ C
 C MOSS = 1.  Compute structure from user-supplied Jacobian routine JAC.
  70   CONTINUE
 C A dummy call to F allows user to create temporaries for use in JAC. --
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       K = IPJAN
       IWK(IPIAN) = 1
       DO 90 J = 1,N
@@ -1420,7 +1421,7 @@ C
 C MOSS = 2.  Compute structure from results of N + 1 calls to F. -------
  100  K = IPJAN
       IWK(IPIAN) = 1
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       DO 120 J = 1,N
         IF (K .GT. LIWK) GO TO 210
         IWK(K) = J
@@ -1429,7 +1430,7 @@ C MOSS = 2.  Compute structure from results of N + 1 calls to F. -------
         ERWT = 1.0D0/EWT(J)
         DYJ = SIGN(ERWT,YJ)
         Y(J) = YJ + DYJ
-        CALL F (NEQ, TN, Y, FTEM)
+        CALL F (NEQ, TN, Y, FTEM, DAT)
         Y(J) = YJ
         DO 110 I = 1,N
           DQ = (FTEM(I) - SAVF(I))/DYJ
@@ -1662,8 +1663,8 @@ C
 C----------------------- End of Subroutine CNTNZU ----------------------
       END
 *DECK DPRJS
-      SUBROUTINE DPRJS (NEQ,Y,YH,NYH,EWT,FTEM,SAVF,WK,IWK,F,JAC)
-      EXTERNAL F,JAC
+      SUBROUTINE DPRJS (NEQ,Y,YH,NYH,EWT,FTEM,SAVF,WK,IWK,F,JAC, DAT)
+      EXTERNAL F,JAC, DAT
       INTEGER NEQ, NYH, IWK
       DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WK
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),
@@ -1780,7 +1781,7 @@ C If MITER = 2, make NGP calls to F to approximate J and P. ------------
           JJ = IWK(IBJGP+J)
           R = MAX(SRUR*ABS(Y(JJ)),R0/EWT(JJ))
  210      Y(JJ) = Y(JJ) + R
-        CALL F (NEQ, TN, Y, FTEM)
+        CALL F (NEQ, TN, Y, FTEM, DAT)
         DO 230 J = JMIN,JMAX
           JJ = IWK(IBJGP+J)
           Y(JJ) = YH(JJ,1)
@@ -1846,7 +1847,7 @@ C If MITER = 3, construct a diagonal approximation to J and P. ---------
       R = EL0*0.1D0
       DO 310 I = 1,N
  310    Y(I) = Y(I) + R*(H*SAVF(I) - YH(I,2))
-      CALL F (NEQ, TN, Y, WK(3))
+      CALL F (NEQ, TN, Y, WK(3), DAT)
       NFE = NFE + 1
       DO 320 I = 1,N
         R0 = H*SAVF(I) - YH(I,2)
@@ -3801,8 +3802,8 @@ c  ******  solve  lt x = y  by back substitution  **********************
       end
 *DECK DSTODA
       SUBROUTINE DSTODA (NEQ, Y, YH, NYH, YH1, EWT, SAVF, ACOR,
-     1   WM, IWM, F, JAC, PJAC, SLVS)
-      EXTERNAL F, JAC, PJAC, SLVS
+     1   WM, IWM, F, JAC, PJAC, SLVS, DAT)
+      EXTERNAL F, JAC, PJAC, SLVS, DAT
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
@@ -4054,7 +4055,7 @@ C-----------------------------------------------------------------------
       DEL = 0.0D0
       DO 230 I = 1,N
  230    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       IF (IPUP .LE. 0) GO TO 250
 C-----------------------------------------------------------------------
@@ -4062,7 +4063,7 @@ C If indicated, the matrix P = I - H*EL(1)*J is reevaluated and
 C preprocessed before starting the corrector iteration.  IPUP is set
 C to 0 as an indicator that this has been done.
 C-----------------------------------------------------------------------
-      CALL PJAC (NEQ, Y, YH, NYH, EWT, ACOR, SAVF, WM, IWM, F, JAC)
+      CALL PJAC (NEQ, Y, YH, NYH, EWT, ACOR, SAVF, WM, IWM, F, JAC, DAT)
       IPUP = 0
       RC = 1.0D0
       NSLP = NST
@@ -4127,7 +4128,7 @@ C-----------------------------------------------------------------------
       IF (M .EQ. MAXCOR) GO TO 410
       IF (M .GE. 2 .AND. DEL .GT. 2.0D0*DELP) GO TO 410
       DELP = DEL
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       GO TO 270
 C-----------------------------------------------------------------------
@@ -4402,7 +4403,7 @@ C-----------------------------------------------------------------------
       H = H*RH
       DO 645 I = 1,N
  645    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       DO 650 I = 1,N
  650    YH(I,2) = H*SAVF(I)
@@ -4434,8 +4435,8 @@ C----------------------- End of Subroutine DSTODA ----------------------
       END
 *DECK DPRJA
       SUBROUTINE DPRJA (NEQ, Y, YH, NYH, EWT, FTEM, SAVF, WM, IWM,
-     1   F, JAC)
-      EXTERNAL F, JAC
+     1   F, JAC, DAT)
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),
@@ -4519,7 +4520,7 @@ C If MITER = 2, make N calls to F to approximate J. --------------------
         R = MAX(SRUR*ABS(YJ),R0/EWT(J))
         Y(J) = Y(J) + R
         FAC = -HL0/R
-        CALL F (NEQ, TN, Y, FTEM)
+        CALL F (NEQ, TN, Y, FTEM, DAT)
         DO 220 I = 1,N
  220      WM(I+J1) = (FTEM(I) - SAVF(I))*FAC
         Y(J) = YJ
@@ -4571,7 +4572,7 @@ C If MITER = 5, make MBAND calls to F to approximate J. ----------------
           YI = Y(I)
           R = MAX(SRUR*ABS(YI),R0/EWT(I))
  530      Y(I) = Y(I) + R
-        CALL F (NEQ, TN, Y, FTEM)
+        CALL F (NEQ, TN, Y, FTEM, DAT)
         DO 550 JJ = J,N,MBAND
           Y(JJ) = YH(JJ,1)
           YJJ = Y(JJ)
@@ -5173,8 +5174,8 @@ C----------------------- End of Subroutine DSRCAR ----------------------
       END
 *DECK DSTODPK
       SUBROUTINE DSTODPK (NEQ, Y, YH, NYH, YH1, EWT, SAVF, SAVX, ACOR,
-     1   WM, IWM, F, JAC, PSOL)
-      EXTERNAL F, JAC, PSOL
+     1   WM, IWM, F, JAC, PSOL, DAT)
+      EXTERNAL F, JAC, PSOL, DAT
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, SAVX, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
@@ -5433,7 +5434,7 @@ C-----------------------------------------------------------------------
       MNEWT = 0
       DO 230 I = 1,N
  230    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       IF (IPUP .LE. 0) GO TO 250
 C-----------------------------------------------------------------------
@@ -5441,7 +5442,7 @@ C If indicated, DPKSET is called to update any matrix data needed,
 C before starting the corrector iteration.
 C IPUP is set to 0 as an indicator that this has been done.
 C-----------------------------------------------------------------------
-      CALL DPKSET (NEQ, Y, YH1, EWT, ACOR, SAVF, WM, IWM, F, JAC)
+      CALL DPKSET (NEQ, Y, YH1, EWT, ACOR, SAVF, WM, IWM, F, JAC, DAT)
       IPUP = 0
       RC = 1.0D0
       NSLP = NST
@@ -5469,7 +5470,7 @@ C P as coefficient matrix.
 C-----------------------------------------------------------------------
  350  DO 360 I = 1,N
  360    SAVX(I) = H*SAVF(I) - (YH(I,2) + ACOR(I))
-      CALL DSOLPK (NEQ, Y, SAVF, SAVX, EWT, WM, IWM, F, PSOL)
+      CALL DSOLPK (NEQ, Y, SAVF, SAVX, EWT, WM, IWM, F, PSOL, DAT)
       IF (IERSL .LT. 0) GO TO 430
       IF (IERSL .GT. 0) GO TO 410
       DEL = DVNORM (N, SAVX, EWT)
@@ -5488,7 +5489,7 @@ C-----------------------------------------------------------------------
       IF (M .GE. 2 .AND. DEL .GT. 2.0D0*DELP) GO TO 410
       MNEWT = M
       DELP = DEL
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       GO TO 270
 C-----------------------------------------------------------------------
@@ -5648,7 +5649,7 @@ C-----------------------------------------------------------------------
       H = H*RH
       DO 645 I = 1,N
  645    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       DO 650 I = 1,N
  650    YH(I,2) = H*SAVF(I)
@@ -5679,8 +5680,9 @@ C-----------------------------------------------------------------------
 C----------------------- End of Subroutine DSTODPK ---------------------
       END
 *DECK DPKSET
-      SUBROUTINE DPKSET (NEQ, Y, YSV, EWT, FTEM, SAVF, WM, IWM, F, JAC)
-      EXTERNAL F, JAC
+      SUBROUTINE DPKSET (NEQ, Y, YSV, EWT, FTEM, SAVF, WM, IWM, F, 
+     1   JAC, DAT)
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, IWM
       DOUBLE PRECISION Y, YSV, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YSV(*), EWT(*), FTEM(*), SAVF(*),
@@ -5732,7 +5734,7 @@ C
       JCUR = 1
       HL0 = EL0*H
       CALL JAC (F, NEQ, TN, Y, YSV, EWT, SAVF, FTEM, HL0,
-     1   WM(LOCWP), IWM(LOCIWP), IER)
+     1   WM(LOCWP), IWM(LOCIWP), IER, DAT)
       NJE = NJE + 1
       IF (IER .EQ. 0) RETURN
       IERPJ = 1
@@ -5740,8 +5742,8 @@ C
 C----------------------- End of Subroutine DPKSET ----------------------
       END
 *DECK DSOLPK
-      SUBROUTINE DSOLPK (NEQ, Y, SAVF, X, EWT, WM, IWM, F, PSOL)
-      EXTERNAL F, PSOL
+      SUBROUTINE DSOLPK (NEQ, Y, SAVF, X, EWT, WM, IWM, F, PSOL, DAT)
+      EXTERNAL F, PSOL, DAT
       INTEGER NEQ, IWM
       DOUBLE PRECISION Y, SAVF, X, EWT, WM
       DIMENSION NEQ(*), Y(*), SAVF(*), X(*), EWT(*), WM(*), IWM(*)
@@ -5808,7 +5810,7 @@ C-----------------------------------------------------------------------
       CALL DSCAL (N, RSQRTN, EWT, 1)
       CALL DSPIOM (NEQ, TN, Y, SAVF, WM(LB), EWT, N, MAXL, KMP, DELTA,
      1   HL0, JPRE, MNEWT, F, PSOL, NPSL, X, WM(LV), WM(LHES), IWM,
-     2   LIOM, WM(LOCWP), IWM(LOCIWP), WM(LWK), IFLAG)
+     2   LIOM, WM(LOCWP), IWM(LOCIWP), WM(LWK), IFLAG, DAT)
       NNI = NNI + 1
       NLI = NLI + LIOM
       NPS = NPS + NPSL
@@ -5832,7 +5834,8 @@ C-----------------------------------------------------------------------
       CALL DSCAL (N, RSQRTN, EWT, 1)
       CALL DSPIGMR (NEQ, TN, Y, SAVF, WM(LB), EWT, N, MAXL, MAXLP1, KMP,
      1   DELTA, HL0, JPRE, MNEWT, F, PSOL, NPSL, X, WM(LV), WM(LHES),
-     2   WM(LQ), LGMR, WM(LOCWP), IWM(LOCIWP), WM(LWK), WM(LDL), IFLAG)
+     2   WM(LQ), LGMR, WM(LOCWP), IWM(LOCIWP), WM(LWK), WM(LDL), 
+     3   IFLAG, DAT)
       NNI = NNI + 1
       NLI = NLI + LGMR
       NPS = NPS + NPSL
@@ -5853,7 +5856,7 @@ C-----------------------------------------------------------------------
       CALL DCOPY (N, X, 1, WM(LR), 1)
       CALL DPCG (NEQ, TN, Y, SAVF, WM(LR), EWT, N, MAXL, DELTA, HL0,
      1          JPRE, MNEWT, F, PSOL, NPSL, X, WM(LP), WM(LW), WM(LZ),
-     2          LPCG, WM(LOCWP), IWM(LOCIWP), WM(LWK), IFLAG)
+     2          LPCG, WM(LOCWP), IWM(LOCIWP), WM(LWK), IFLAG, DAT)
       NNI = NNI + 1
       NLI = NLI + LPCG
       NPS = NPS + NPSL
@@ -5873,7 +5876,7 @@ C-----------------------------------------------------------------------
       CALL DCOPY (N, X, 1, WM(LR), 1)
       CALL DPCGS (NEQ, TN, Y, SAVF, WM(LR), EWT, N, MAXL, DELTA, HL0,
      1           JPRE, MNEWT, F, PSOL, NPSL, X, WM(LP), WM(LW), WM(LZ),
-     2           LPCG, WM(LOCWP), IWM(LOCIWP), WM(LWK), IFLAG)
+     2           LPCG, WM(LOCWP), IWM(LOCIWP), WM(LWK), IFLAG, DAT)
       NNI = NNI + 1
       NLI = NLI + LPCG
       NPS = NPS + NPSL
@@ -5902,8 +5905,8 @@ C----------------------- End of Subroutine DSOLPK ----------------------
 *DECK DSPIOM
       SUBROUTINE DSPIOM (NEQ, TN, Y, SAVF, B, WGHT, N, MAXL, KMP, DELTA,
      1            HL0, JPRE, MNEWT, F, PSOL, NPSL, X, V, HES, IPVT,
-     2            LIOM, WP, IWP, WK, IFLAG)
-      EXTERNAL F, PSOL
+     2            LIOM, WP, IWP, WK, IFLAG, DAT)
+      EXTERNAL F, PSOL, DAT
       INTEGER NEQ,N,MAXL,KMP,JPRE,MNEWT,NPSL,IPVT,LIOM,IWP,IFLAG
       DOUBLE PRECISION TN,Y,SAVF,B,WGHT,DELTA,HL0,X,V,HES,WP,WK
       DIMENSION NEQ(*), Y(*), SAVF(*), B(*), WGHT(*), X(*), V(N,*),
@@ -6041,7 +6044,7 @@ C Call routine DORTHOG to orthogonalize the new vector vnew = V(*,l+1).
 C Call routine DHEFA to update the factors of HES.
 C-----------------------------------------------------------------------
         CALL DATV (NEQ, Y, SAVF, V(1,LL), WGHT, X, F, PSOL, V(1,LL+1),
-     1        WK, WP, IWP, HL0, JPRE, IER, NPSL)
+     1        WK, WP, IWP, HL0, JPRE, IER, NPSL, DAT)
         IF (IER .NE. 0) GO TO 300
         CALL DORTHOG (V(1,LL+1), V, HES, N, LL, MAXL, KMP, SNORMW)
         CALL DHEFA (HES, MAXL, LL, IPVT, INFO, LL)
@@ -6117,8 +6120,8 @@ C----------------------- End of Subroutine DSPIOM ----------------------
       END
 *DECK DATV
       SUBROUTINE DATV (NEQ, Y, SAVF, V, WGHT, FTEM, F, PSOL, Z, VTEM,
-     1                WP, IWP, HL0, JPRE, IER, NPSL)
-      EXTERNAL F, PSOL
+     1                WP, IWP, HL0, JPRE, IER, NPSL, DAT)
+      EXTERNAL F, PSOL, DAT
       INTEGER NEQ, IWP, JPRE, IER, NPSL
       DOUBLE PRECISION Y, SAVF, V, WGHT, FTEM, Z, VTEM, WP, HL0
       DIMENSION NEQ(*), Y(*), SAVF(*), V(*), WGHT(*), FTEM(*), Z(*),
@@ -6219,7 +6222,7 @@ C Save Y in Z and increment Y by VTEM/norm.
 C
 C For all JPRE, call F with incremented Y argument, and restore Y.
  60   CONTINUE
-      CALL F (NEQ, TN, Y, FTEM)
+      CALL F (NEQ, TN, Y, FTEM, DAT)
       NFE = NFE + 1
       CALL DCOPY (N, Z, 1, Y, 1)
 C Set Z = (identity - hl0*Jacobian) * VTEM, using difference quotient.
@@ -6327,8 +6330,8 @@ C----------------------- End of Subroutine DORTHOG ---------------------
 *DECK DSPIGMR
       SUBROUTINE DSPIGMR (NEQ, TN, Y, SAVF, B, WGHT, N, MAXL, MAXLP1,
      1  KMP, DELTA, HL0, JPRE, MNEWT, F, PSOL, NPSL, X, V, HES, Q,
-     2  LGMR, WP, IWP, WK, DL, IFLAG)
-      EXTERNAL F, PSOL
+     2  LGMR, WP, IWP, WK, DL, IFLAG, DAT)
+      EXTERNAL F, PSOL, DAT
       INTEGER NEQ,N,MAXL,MAXLP1,KMP,JPRE,MNEWT,NPSL,LGMR,IWP,IFLAG
       DOUBLE PRECISION TN,Y,SAVF,B,WGHT,DELTA,HL0,X,V,HES,Q,WP,WK,DL
       DIMENSION NEQ(*), Y(*), SAVF(*), B(*), WGHT(*), X(*), V(N,*),
@@ -6474,7 +6477,7 @@ C Call routine DORTHOG to orthogonalize the new vector VNEW = V(*,LL+1).
 C Call routine DHEQR to update the factors of HES.
 C-----------------------------------------------------------------------
         CALL DATV (NEQ, Y, SAVF, V(1,LL), WGHT, X, F, PSOL, V(1,LL+1),
-     1        WK, WP, IWP, HL0, JPRE, IER, NPSL)
+     1        WK, WP, IWP, HL0, JPRE, IER, NPSL, DAT)
         IF (IER .NE. 0) GO TO 300
         CALL DORTHOG (V(1,LL+1), V, HES, N, LL, MAXLP1, KMP, SNORMW)
         HES(LL+1,LL) = SNORMW
@@ -6563,8 +6566,9 @@ C----------------------- End of Subroutine DSPIGMR ---------------------
       END
 *DECK DPCG
       SUBROUTINE DPCG (NEQ, TN, Y, SAVF, R, WGHT, N, MAXL, DELTA, HL0,
-     1 JPRE, MNEWT, F, PSOL, NPSL, X, P, W, Z, LPCG, WP, IWP, WK, IFLAG)
-      EXTERNAL F, PSOL
+     1 JPRE, MNEWT, F, PSOL, NPSL, X, P, W, Z, LPCG, WP, IWP, WK, 
+     2 IFLAG, DAT)
+      EXTERNAL F, PSOL, DAT
       INTEGER NEQ, N, MAXL, JPRE, MNEWT, NPSL, LPCG, IWP, IFLAG
       DOUBLE PRECISION TN,Y,SAVF,R,WGHT,DELTA,HL0,X,P,W,Z,WP,WK
       DIMENSION NEQ(*), Y(*), SAVF(*), R(*), WGHT(*), X(*), P(*), W(*),
@@ -6676,7 +6680,7 @@ C Loop point for PCG iterations. ---------------------------------------
 C-----------------------------------------------------------------------
 C  Call DATP to compute A*p and return the answer in W.
 C-----------------------------------------------------------------------
-      CALL DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W)
+      CALL DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W, DAT)
 C
       PTW = DDOT (N, P, 1, W, 1)
       IF (PTW .EQ. 0.0D0) GO TO 200
@@ -6708,8 +6712,9 @@ C----------------------- End of Subroutine DPCG ------------------------
       END
 *DECK DPCGS
       SUBROUTINE DPCGS (NEQ, TN, Y, SAVF, R, WGHT, N, MAXL, DELTA, HL0,
-     1 JPRE, MNEWT, F, PSOL, NPSL, X, P, W, Z, LPCG, WP, IWP, WK, IFLAG)
-      EXTERNAL F, PSOL
+     1 JPRE, MNEWT, F, PSOL, NPSL, X, P, W, Z, LPCG, WP, IWP, WK, 
+     2 IFLAG, DAT)
+      EXTERNAL F, PSOL, DAT
       INTEGER NEQ, N, MAXL, JPRE, MNEWT, NPSL, LPCG, IWP, IFLAG
       DOUBLE PRECISION TN,Y,SAVF,R,WGHT,DELTA,HL0,X,P,W,Z,WP,WK
       DIMENSION NEQ(*), Y(*), SAVF(*), R(*), WGHT(*), X(*), P(*), W(*),
@@ -6824,7 +6829,7 @@ C Loop point for PCG iterations. ---------------------------------------
 C-----------------------------------------------------------------------
 C  Call DATP to compute A*p and return the answer in W.
 C-----------------------------------------------------------------------
-      CALL DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W)
+      CALL DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W, DAT)
 C
       PTW = 0.0D0
       DO 80 I = 1,N
@@ -6857,8 +6862,8 @@ C-----------------------------------------------------------------------
 C----------------------- End of Subroutine DPCGS -----------------------
       END
 *DECK DATP
-      SUBROUTINE DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W)
-      EXTERNAL F
+      SUBROUTINE DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W, DAT)
+      EXTERNAL F, DAT
       INTEGER NEQ
       DOUBLE PRECISION Y, SAVF, P, WGHT, HL0, WK, W
       DIMENSION NEQ(*), Y(*), SAVF(*), P(*), WGHT(*), WK(*), W(*)
@@ -6913,7 +6918,7 @@ C
       CALL DCOPY (N, Y, 1, W, 1)
       DO 20 I = 1,N
  20     Y(I) = W(I) + P(I)*RPNRM
-      CALL F (NEQ, TN, Y, WK)
+      CALL F (NEQ, TN, Y, WK, DAT)
       NFE = NFE + 1
       CALL DCOPY (N, W, 1, Y, 1)
       FAC = HL0*PNRM
@@ -7535,8 +7540,8 @@ C----------------------- End of Subroutine DHELS -----------------------
       END
 *DECK DLHIN
       SUBROUTINE DLHIN (NEQ, N, T0, Y0, YDOT, F, TOUT, UROUND,
-     1   EWT, ITOL, ATOL, Y, TEMP, H0, NITER, IER)
-      EXTERNAL F
+     1   EWT, ITOL, ATOL, Y, TEMP, H0, NITER, IER, DAT)
+      EXTERNAL F, DAT
       DOUBLE PRECISION T0, Y0, YDOT, TOUT, UROUND, EWT, ATOL, Y,
      1   TEMP, H0
       INTEGER NEQ, N, ITOL, NITER, IER
@@ -7624,7 +7629,7 @@ C Estimate the second derivative as a difference quotient in f. --------
       T1 = T0 + HG
       DO 60 I = 1,N
  60     Y(I) = Y0(I) + HG*YDOT(I)
-      CALL F (NEQ, T1, Y, TEMP)
+      CALL F (NEQ, T1, Y, TEMP, DAT)
       DO 70 I = 1,N
  70     TEMP(I) = (TEMP(I) - YDOT(I))/HG
       YDDNRM = DVNORM (N, TEMP, EWT)
@@ -7669,8 +7674,8 @@ C----------------------- End of Subroutine DLHIN -----------------------
       END
 *DECK DSTOKA
       SUBROUTINE DSTOKA (NEQ, Y, YH, NYH, YH1, EWT, SAVF, SAVX, ACOR,
-     1   WM, IWM, F, JAC, PSOL)
-      EXTERNAL F, JAC, PSOL
+     1   WM, IWM, F, JAC, PSOL, DAT)
+      EXTERNAL F, JAC, PSOL, DAT
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, SAVX, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
@@ -7932,7 +7937,7 @@ C-----------------------------------------------------------------------
       NSLOW = 0
       DO 230 I = 1,N
  230    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       IF (NEWT .EQ. 0 .OR. IPUP .LE. 0) GO TO 250
 C-----------------------------------------------------------------------
@@ -7949,7 +7954,8 @@ C-----------------------------------------------------------------------
         NSLJ = NST
         NJEV = NJEV + 1
         ENDIF
-      CALL DSETPK (NEQ, Y, YH1, EWT, ACOR, SAVF, JOK, WM, IWM, F, JAC)
+      CALL DSETPK (NEQ, Y, YH1, EWT, ACOR, SAVF, JOK, WM, IWM, 
+     1  F, JAC, DAT)
       IPUP = 0
       RC = 1.0D0
       DRC = 0.0D0
@@ -7981,7 +7987,7 @@ C-----------------------------------------------------------------------
  350  DO 360 I = 1,N
  360    SAVX(I) = H*SAVF(I) - (YH(I,2) + ACOR(I))
       DFNORM = DVNORM (N, SAVX, EWT)
-      CALL DSOLPK (NEQ, Y, SAVF, SAVX, EWT, WM, IWM, F, PSOL)
+      CALL DSOLPK (NEQ, Y, SAVF, SAVX, EWT, WM, IWM, F, PSOL, DAT)
       IF (IERSL .LT. 0) GO TO 430
       IF (IERSL .GT. 0) GO TO 410
       DEL = DVNORM (N, SAVX, EWT)
@@ -8009,7 +8015,7 @@ C-----------------------------------------------------------------------
       IF (NSLOW .GE. 2) GO TO 410
       MNEWT = M
       DELP = DEL
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       GO TO 270
 C-----------------------------------------------------------------------
@@ -8189,7 +8195,7 @@ C-----------------------------------------------------------------------
       H = H*RH
       DO 645 I = 1,N
  645    Y(I) = YH(I,1)
-      CALL F (NEQ, TN, Y, SAVF)
+      CALL F (NEQ, TN, Y, SAVF, DAT)
       NFE = NFE + 1
       DO 650 I = 1,N
  650    YH(I,2) = H*SAVF(I)
@@ -8221,8 +8227,8 @@ C----------------------- End of Subroutine DSTOKA ----------------------
       END
 *DECK DSETPK
       SUBROUTINE DSETPK (NEQ, Y, YSV, EWT, FTEM, SAVF, JOK, WM, IWM,
-     1                  F, JAC)
-      EXTERNAL F, JAC
+     1                  F, JAC, DAT)
+      EXTERNAL F, JAC, DAT
       INTEGER NEQ, JOK, IWM
       DOUBLE PRECISION Y, YSV, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YSV(*), EWT(*), FTEM(*), SAVF(*),
@@ -8278,7 +8284,7 @@ C
       IF (JOK .EQ. -1) JCUR = 1
       HL0 = EL0*H
       CALL JAC (F, NEQ, TN, Y, YSV, EWT, SAVF, FTEM, HL0, JOK,
-     1   WM(LOCWP), IWM(LOCIWP), IER)
+     1   WM(LOCWP), IWM(LOCIWP), IER, DAT)
       NJE = NJE + 1
       IF (IER .EQ. 0) RETURN
       IERPJ = 1
