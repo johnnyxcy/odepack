@@ -12,10 +12,9 @@ set(_ODEPACK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
 # src files
 set(
     _ODEPACK_SRC
-    src/dlsoda/dlsoda.f
-    src/dlsoda/opkda1.f
-    src/dlsoda/opkda2.f
-    src/dverk/dverk.f
+    src/dlsoda.f
+    src/opkda1.f
+    src/opkda2.f
 )
 add_library(odepack SHARED ${_ODEPACK_SRC})
 target_compile_options(
