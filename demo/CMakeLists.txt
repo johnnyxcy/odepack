@@ -1,14 +1,10 @@
-project(odepack-test LANGUAGES CXX)
+project(odepack-demo LANGUAGES CXX)
 
 add_executable(
-    test-odepack
+    odepack-demo
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cc
 )
 target_link_libraries(
-    test-odepack
+    odepack-demo
     odepack::odepack
-)
-add_test(
-    NAME test-odepack
-    COMMAND $<TARGET_FILE:test-odepack>
 )
